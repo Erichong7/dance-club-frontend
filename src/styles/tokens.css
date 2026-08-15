@@ -1,0 +1,67 @@
+:root {
+  /* Color tokens */
+  --color-bg: #FAFAF8;
+  --color-surface: #FFFFFF;
+  --color-surface-sunken: #F1F0EC;
+  --color-border: #E4E2DA;
+  --color-border-strong: #D3D0C6;
+
+  --color-text-primary: #1B1B1F;
+  --color-text-secondary: #6B6A63;
+  --color-text-tertiary: #9C9A90;
+
+  --color-stage: #5B3FF5;      /* 스테이지 퍼플 - 주 액션, 동아리방 */
+  --color-stage-tint: #EFEBFF;
+  --color-stage-dark: #4126D9;
+
+  --color-mint: #17B890;       /* 치어룸 */
+  --color-mint-tint: #E4F7F1;
+
+  --color-yellow: #F2B705;     /* 학생회관 지하 - 동아리방(퍼플)과 구분용 */
+  --color-yellow-tint: #FFF7D6;
+  --color-yellow-dark: #8A6D00;
+
+  --color-amber: #E58900;      /* 외부연습실 / 경고 */
+  --color-amber-tint: #FFF3DF;
+
+  --color-coral: #E0353F;      /* 긴급 / 지하주차장 */
+  --color-coral-tint: #FDEBEC;
+
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  -webkit-font-smoothing: antialiased;
+}
+
+button, input, select {
+  font-family: inherit;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--color-stage);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
