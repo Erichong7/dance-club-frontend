@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { IconChevronLeft, IconChevronRight, IconClipboard } from '../components/Icons.jsx';
 import { api } from '../api/client.js';
-import { useAuth } from '../context/AuthContext.jsx';
 import { roomLabels, roomOrder } from '../api/mockData.js';
 import {
   mondayOf, addDays, toISODate, formatWeekRange, timeStringToHour, dayIndexFromMonday,
@@ -115,7 +114,6 @@ function EventBlock({ ev, col, cols }) {
 }
 
 export default function Schedule() {
-  const { isAuthed } = useAuth();
   const [performances, setPerformances] = useState([]);
   const [performanceId, setPerformanceId] = useState('');
   const [teamId, setTeamId] = useState('');
@@ -130,8 +128,7 @@ export default function Schedule() {
 
   const handleCopy = async () => {
     const performanceName = performances.find((p) => String(p.id) === String(performanceId))?.name ?? '';
-    const teamName = teamId ? availableTeams.find((t) => String(t.id) === String(teamId))?.name ?? '' : '';
-    const text = buildCopyText(events, monday, performanceName, teamName);
+    const text = buildCopyText(displayedEvents, monday, performanceName, selectedTeamName ?? '');
     try {
       await navigator.clipboard.writeText(text);
       setCopyState('copied');
@@ -153,10 +150,9 @@ export default function Schedule() {
     let cancelled = false;
     setLoading(true);
     setError('');
-    const fetcher = teamId
-      ? api.getTeamWeekSchedules(teamId, performanceId, toISODate(monday))
-      : api.getWeekSchedules(performanceId, toISODate(monday));
-    fetcher
+    // 로그인 없이도 팀 필터가 동작하도록, 인증이 필요한 /schedules/team/{id}/week 대신
+    // 공개 엔드포인트(/schedules)로 주간 전체 일정을 받아 팀은 프론트에서 걸러낸다.
+    api.getWeekSchedules(performanceId, toISODate(monday))
       .then((page) => {
         if (cancelled) return;
         const mapped = (page.content ?? [])
@@ -181,7 +177,10 @@ export default function Schedule() {
       .catch((err) => setError(err.message))
       .finally(() => !cancelled && setLoading(false));
     return () => { cancelled = true; };
-  }, [performanceId, teamId, monday.getTime()]);
+  }, [performanceId, monday.getTime()]);
+
+  const selectedTeamName = teamId ? availableTeams.find((t) => String(t.id) === String(teamId))?.name : '';
+  const displayedEvents = selectedTeamName ? events.filter((e) => e.team === selectedTeamName) : events;
 
   return (
     <div>
@@ -199,16 +198,14 @@ export default function Schedule() {
               ))}
             </select>
           </div>
-          {isAuthed && (
-            <div className="form-group" style={{ minWidth: 160 }}>
-              <select className="form-select" value={teamId} onChange={(e) => setTeamId(e.target.value)}>
-                <option value="">전체 팀</option>
-                {availableTeams.map((t) => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
-                ))}
-              </select>
-            </div>
-          )}
+          <div className="form-group" style={{ minWidth: 160 }}>
+            <select className="form-select" value={teamId} onChange={(e) => setTeamId(e.target.value)}>
+              <option value="">전체 팀</option>
+              {availableTeams.map((t) => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
+          </div>
         </div>
         <div className="week-nav">
           <button onClick={() => setWeekOffset((w) => w - 1)} aria-label="이전 주">
@@ -219,7 +216,7 @@ export default function Schedule() {
             <IconChevronRight />
           </button>
         </div>
-        <button className="btn btn-ghost btn-sm" onClick={handleCopy} disabled={events.length === 0}>
+        <button className="btn btn-ghost btn-sm" onClick={handleCopy} disabled={displayedEvents.length === 0}>
           <IconClipboard width={14} height={14} />
           {copyState === 'copied' ? '복사됨' : copyState === 'failed' ? '복사 실패' : '복사'}
         </button>
@@ -254,7 +251,7 @@ export default function Schedule() {
             ))}
           </div>
           {DAY_LABELS.map((_, dayIdx) => {
-            const dayEvents = events.filter((e) => e.day === dayIdx);
+            const dayEvents = displayedEvents.filter((e) => e.day === dayIdx);
             const layout = layoutDayEvents(dayEvents);
             return (
               <div className="day-col" key={dayIdx}>
