@@ -7,8 +7,8 @@ import {
   dateOfAt, timeOfAt, isOvernightAt, DAY_LABELS,
 } from '../utils/date.js';
 
-const ROW_START = 8; // 08:00
-const hours = Array.from({ length: 16 }, (_, i) => `${String(ROW_START + i).padStart(2, '0')}:00`); // 08:00 ~ 24:00
+const ROW_START = 0; // 00:00 — Apply의 시작 시간 선택 범위(08:00~익일 01:30)를 모두 그리드에 표시하려면 자정부터 시작해야 함
+const hours = Array.from({ length: 24 }, (_, i) => `${String(ROW_START + i).padStart(2, '0')}:00`); // 00:00 ~ 24:00
 
 const roomColor = {
   CLUB_ROOM: { border: 'var(--color-stage)', bg: 'var(--color-stage-tint)', text: 'var(--color-stage-dark)' },

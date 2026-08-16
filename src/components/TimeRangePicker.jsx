@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 
-// 시작 시간 선택지는 09:00~22:30(30분 단위)로 고정한다. 소요 시간은 이제 자정을 넘겨도
-// 되므로(백엔드가 endTime < startTime을 익일 종료로 해석) 영업 종료 시각과 무관하게
-// 항상 최대 4시간까지만 노출한다.
-const START_HOUR = 9;
-const END_HOUR = 23;
+// 시작 시간 선택지는 08:00~익일 01:30(30분 단위)로 고정한다. END_HOUR를 24 이상으로 두면
+// buildStartOptions()가 만드는 분(minute) 값이 1440을 넘어가고, minutesToTime()이 이를
+// 자정 기준으로 감싸(mod 1440) 00:00~01:30 같은 익일 새벽 옵션을 자동으로 만들어준다.
+// 소요 시간은 이제 자정을 넘겨도 되므로(백엔드가 endTime < startTime을 익일 종료로 해석)
+// 영업 종료 시각과 무관하게 항상 최대 4시간까지만 노출한다.
+const START_HOUR = 8;
+const END_HOUR = 26; // 익일 02:00(배타적 상한) → 마지막 시작 옵션은 01:30
 const STEP_MIN = 30;
 const MAX_DURATION_MIN = 240; // 소요 시간은 최대 4시간까지만 노출
 
