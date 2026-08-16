@@ -43,6 +43,8 @@ export default function Login() {
   return (
     <div className="login-screen">
       <div className="login-card card">
+        <Link to="/" className="btn btn-ghost btn-sm" style={{ marginBottom: 12 }}>← 홈으로</Link>
+
         <div className="login-brand">
           <BrandMark className="brand-mark" />
           <div className="brand-name">practice.zip</div>
