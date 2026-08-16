@@ -186,7 +186,7 @@ export default function Schedule() {
   return (
     <div>
       <div className="week-header">
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="week-filters">
           <div className="form-group" style={{ minWidth: 220 }}>
             <select
               className="form-select"
