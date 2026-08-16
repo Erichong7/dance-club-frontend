@@ -7,8 +7,8 @@ import {
   dateOfAt, timeOfAt, isOvernightAt, DAY_LABELS,
 } from '../utils/date.js';
 
-const ROW_START = 0; // 00:00 — Apply의 시작 시간 선택 범위(08:00~익일 01:30)를 모두 그리드에 표시하려면 자정부터 시작해야 함
-const hours = Array.from({ length: 24 }, (_, i) => `${String(ROW_START + i).padStart(2, '0')}:00`); // 00:00 ~ 24:00
+const DEFAULT_ROW_START = 12; // 기본 그리드는 12:00부터
+const GRID_END = 24; // 그리드 끝은 항상 24:00 고정(자정 넘긴 종료는 여기서 클리핑해서 그림)
 
 const roomColor = {
   CLUB_ROOM: { border: 'var(--color-stage)', bg: 'var(--color-stage-tint)', text: 'var(--color-stage-dark)' },
@@ -86,9 +86,9 @@ function buildCopyText(events, monday, performanceName, teamName) {
   return lines.join('\n');
 }
 
-function EventBlock({ ev, col, cols }) {
+function EventBlock({ ev, col, cols, rowStart }) {
   const c = roomColor[ev.room];
-  const top = (ev.start - ROW_START) * 48;
+  const top = (ev.start - rowStart) * 48;
   const height = Math.max((ev.end - ev.start) * 48 - 2, 20);
   const widthPct = 100 / cols;
   const endText = ev.overnight ? `익일 ${ev.endLabel}` : formatHour(ev.end);
@@ -182,6 +182,10 @@ export default function Schedule() {
   const selectedTeamName = teamId ? availableTeams.find((t) => String(t.id) === String(teamId))?.name : '';
   const displayedEvents = selectedTeamName ? events.filter((e) => e.team === selectedTeamName) : events;
 
+  // 기본은 12:00~24:00만 보여주되, 그 주에 12시 이전 시작 연습이 있으면 그만큼만 앞당겨 확장한다.
+  const rowStart = Math.min(DEFAULT_ROW_START, ...displayedEvents.map((e) => Math.floor(e.start)));
+  const hours = Array.from({ length: GRID_END - rowStart }, (_, i) => `${String(rowStart + i).padStart(2, '0')}:00`);
+
   return (
     <div>
       <div className="week-header">
@@ -258,7 +262,7 @@ export default function Schedule() {
                 {hours.map((h) => <div className="time-cell" key={h} />)}
                 {dayEvents.map((e) => {
                   const { col, cols } = layout.get(e.id);
-                  return <EventBlock ev={e} col={col} cols={cols} key={e.id} />;
+                  return <EventBlock ev={e} col={col} cols={cols} rowStart={rowStart} key={e.id} />;
                 })}
               </div>
             );
