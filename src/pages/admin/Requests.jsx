@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { IconChevronLeft, IconChevronRight } from '../../components/Icons.jsx';
 import { api } from '../../api/client.js';
+import ConfirmDialog from '../../components/ConfirmDialog.jsx';
 import { roomLabels, roomOrder } from '../../api/mockData.js';
 import { mondayOf, addDays, toISODate, formatWeekRange, toBackendTime, dateOfAt, timeOfAt, isOvernightAt } from '../../utils/date.js';
 
@@ -27,6 +28,7 @@ export default function AdminRequests() {
   const [assigningWeek, setAssigningWeek] = useState(false);
   const [manualForm, setManualForm] = useState(manualInitial);
   const [manualSaving, setManualSaving] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
 
   const monday = addDays(mondayOf(new Date()), weekOffset * 7);
 
@@ -104,11 +106,14 @@ export default function AdminRequests() {
     }
   };
 
-  const removeSchedule = async (id) => {
+  const confirmRemoveSchedule = async () => {
+    if (!deleteTargetId) return;
+    const id = deleteTargetId;
     setBusyId(id);
     setError('');
     try {
       await api.deleteSchedule(id);
+      setDeleteTargetId(null);
       load();
     } catch (err) {
       setError(err.message);
@@ -201,7 +206,7 @@ export default function AdminRequests() {
                     연습실 변경
                   </button>
                 )}
-                <button className="btn btn-ghost btn-sm" disabled={busyId === s.id} onClick={() => removeSchedule(s.id)}>삭제</button>
+                <button className="btn btn-ghost btn-sm" disabled={busyId === s.id} onClick={() => setDeleteTargetId(s.id)}>삭제</button>
               </div>
             </div>
 
@@ -225,6 +230,16 @@ export default function AdminRequests() {
           </div>
         ))}
       </div>
+
+      <ConfirmDialog
+        open={!!deleteTargetId}
+        title="일정 삭제"
+        message="이 연습 일정을 정말 삭제하시겠습니까? 되돌릴 수 없습니다."
+        loading={busyId === deleteTargetId}
+        error={error}
+        onConfirm={confirmRemoveSchedule}
+        onCancel={() => { if (busyId !== deleteTargetId) setDeleteTargetId(null); }}
+      />
 
       <div className="card" style={{ maxWidth: 620 }}>
         <div className="card-header"><div className="card-title">관리자 직접 배정</div></div>

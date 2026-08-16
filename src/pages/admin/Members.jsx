@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api/client.js';
 import { useAuth } from '../../context/AuthContext.jsx';
+import ConfirmDialog from '../../components/ConfirmDialog.jsx';
 
 const DELETE_USER_ERROR_MESSAGE = {
   SELF_DELETE_FORBIDDEN: '본인 계정은 삭제할 수 없습니다.',
@@ -128,28 +129,21 @@ export default function AdminMembers() {
         </div>
       )}
 
-      {deleteTarget && (
-        <div className="modal-bg" onClick={closeDeleteModal}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <div className="modal-title">회원 삭제</div>
-              <button className="modal-close" onClick={closeDeleteModal}>✕</button>
-            </div>
-            <p style={{ fontSize: 13, lineHeight: 1.6, marginBottom: 16 }}>
-              <strong>{deleteTarget.nickName}</strong>({deleteTarget.email}) 님을 정말 삭제하시겠습니까?
-              <br />
-              게시글·연습 신청·팀 멤버십이 함께 삭제되며 되돌릴 수 없습니다.
-            </p>
-            {deleteError && <div className="validation-msg validation-err" style={{ marginBottom: 12 }}>⚠ {deleteError}</div>}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-              <button className="btn btn-ghost btn-sm" disabled={deleting} onClick={closeDeleteModal}>취소</button>
-              <button className="btn btn-danger btn-sm" disabled={deleting} onClick={confirmDelete}>
-                {deleting ? '삭제 중…' : '삭제'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="회원 삭제"
+        message={deleteTarget && (
+          <>
+            <strong>{deleteTarget.nickName}</strong>({deleteTarget.email}) 님을 정말 삭제하시겠습니까?
+            <br />
+            게시글·연습 신청·팀 멤버십이 함께 삭제되며 되돌릴 수 없습니다.
+          </>
+        )}
+        loading={deleting}
+        error={deleteError}
+        onConfirm={confirmDelete}
+        onCancel={closeDeleteModal}
+      />
     </div>
   );
 }

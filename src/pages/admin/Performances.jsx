@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../../api/client.js';
+import ConfirmDialog from '../../components/ConfirmDialog.jsx';
 
 const initialForm = { name: '', performanceDate: '', description: '' };
 const ROLE_LABEL = { LEADER: '팀장', DEPUTY: '부팀장', MEMBER: '팀원' };
@@ -145,6 +146,12 @@ function TeamRow({ team, onChanged }) {
   const [role, setRole] = useState('MEMBER');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [confirmDeleteTeam, setConfirmDeleteTeam] = useState(false);
+  const [teamDeleting, setTeamDeleting] = useState(false);
+  const [teamDeleteError, setTeamDeleteError] = useState('');
+  const [memberToRemove, setMemberToRemove] = useState(null); // { userId, nickname }
+  const [memberRemoving, setMemberRemoving] = useState(false);
+  const [memberRemoveError, setMemberRemoveError] = useState('');
 
   const loadDetail = () => {
     api.getTeam(team.id).then(setDetail).catch((err) => setError(err.message));
@@ -156,14 +163,17 @@ function TeamRow({ team, onChanged }) {
     if (next && !detail) loadDetail();
   };
 
-  const removeTeam = async (e) => {
-    e.stopPropagation();
-    setError('');
+  const confirmRemoveTeam = async () => {
+    setTeamDeleting(true);
+    setTeamDeleteError('');
     try {
       await api.deleteTeam(team.id);
+      setConfirmDeleteTeam(false);
       onChanged();
     } catch (err) {
-      setError(err.message);
+      setTeamDeleteError(err.message);
+    } finally {
+      setTeamDeleting(false);
     }
   };
 
@@ -190,13 +200,18 @@ function TeamRow({ team, onChanged }) {
     }
   };
 
-  const removeMember = async (targetUserId) => {
-    setError('');
+  const confirmRemoveMember = async () => {
+    if (!memberToRemove) return;
+    setMemberRemoving(true);
+    setMemberRemoveError('');
     try {
-      await api.removeTeamMember(team.id, targetUserId);
+      await api.removeTeamMember(team.id, memberToRemove.userId);
+      setMemberToRemove(null);
       loadDetail();
     } catch (err) {
-      setError(err.message);
+      setMemberRemoveError(err.message);
+    } finally {
+      setMemberRemoving(false);
     }
   };
 
@@ -207,8 +222,24 @@ function TeamRow({ team, onChanged }) {
           <div className="notice-title">{team.name}</div>
           <div className="notice-meta">생성일 {new Date(team.createdAt).toLocaleDateString('ko-KR')}</div>
         </div>
-        <button className="btn btn-ghost btn-sm" style={{ marginLeft: 'auto' }} onClick={removeTeam}>삭제</button>
+        <button
+          className="btn btn-ghost btn-sm"
+          style={{ marginLeft: 'auto' }}
+          onClick={(e) => { e.stopPropagation(); setConfirmDeleteTeam(true); }}
+        >
+          삭제
+        </button>
       </div>
+
+      <ConfirmDialog
+        open={confirmDeleteTeam}
+        title="팀 삭제"
+        message={<><strong>{team.name}</strong> 팀을 정말 삭제하시겠습니까? 되돌릴 수 없습니다.</>}
+        loading={teamDeleting}
+        error={teamDeleteError}
+        onConfirm={confirmRemoveTeam}
+        onCancel={() => { if (!teamDeleting) { setConfirmDeleteTeam(false); setTeamDeleteError(''); } }}
+      />
 
       {expanded && (
         <div style={{ padding: '12px 4px 4px' }}>
@@ -228,10 +259,26 @@ function TeamRow({ team, onChanged }) {
                     <select className="form-select role-select" value={m.role} onChange={(e) => changeRole(m.userId, e.target.value)}>
                       {Object.keys(ROLE_LABEL).map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
                     </select>
-                    <button className="btn btn-ghost btn-sm" onClick={() => removeMember(m.userId)}>제거</button>
+                    <button
+                      className="btn btn-ghost btn-sm"
+                      onClick={() => setMemberToRemove({ userId: m.userId, nickname: m.nickname })}
+                    >
+                      제거
+                    </button>
                   </div>
                 ))}
               </div>
+
+              <ConfirmDialog
+                open={!!memberToRemove}
+                title="팀원 제거"
+                message={memberToRemove && <><strong>{memberToRemove.nickname}</strong> 님을 이 팀에서 제거하시겠습니까?</>}
+                confirmLabel="제거"
+                loading={memberRemoving}
+                error={memberRemoveError}
+                onConfirm={confirmRemoveMember}
+                onCancel={() => { if (!memberRemoving) { setMemberToRemove(null); setMemberRemoveError(''); } }}
+              />
 
               <div className="rule-box">
                 <div className="rule-box-title">팀원 추가</div>
@@ -268,6 +315,9 @@ function PerformanceList() {
   const [error, setError] = useState('');
   const [form, setForm] = useState(initialForm);
   const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null); // performance object
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   const load = () => {
     setLoading(true);
@@ -300,13 +350,18 @@ function PerformanceList() {
     }
   };
 
-  const remove = async (id) => {
-    setError('');
+  const confirmRemove = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    setDeleteError('');
     try {
-      await api.deletePerformance(id);
+      await api.deletePerformance(deleteTarget.id);
+      setDeleteTarget(null);
       load();
     } catch (err) {
-      setError(err.message);
+      setDeleteError(err.message);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -346,10 +401,20 @@ function PerformanceList() {
               <div className="team-name">{p.name}</div>
               <div className="team-time">{p.performanceDate}{p.description ? ` · ${p.description}` : ''}</div>
             </Link>
-            <button className="btn btn-ghost btn-sm" style={{ marginLeft: 'auto' }} onClick={() => remove(p.id)}>삭제</button>
+            <button className="btn btn-ghost btn-sm" style={{ marginLeft: 'auto' }} onClick={() => setDeleteTarget(p)}>삭제</button>
           </div>
         ))}
       </div>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="공연 삭제"
+        message={deleteTarget && <><strong>{deleteTarget.name}</strong> 공연을 정말 삭제하시겠습니까? 되돌릴 수 없습니다.</>}
+        loading={deleting}
+        error={deleteError}
+        onConfirm={confirmRemove}
+        onCancel={() => { if (!deleting) { setDeleteTarget(null); setDeleteError(''); } }}
+      />
     </div>
   );
 }

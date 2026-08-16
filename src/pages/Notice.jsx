@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import ConfirmDialog from '../components/ConfirmDialog.jsx';
 
 function formatDate(iso) {
   return new Date(iso).toLocaleString('ko-KR', { dateStyle: 'medium', timeStyle: 'short' });
@@ -120,6 +121,8 @@ function NoticeDetail({ id }) {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ title: '', content: '' });
   const [saving, setSaving] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const load = () => {
     api.getPost(id)
@@ -143,12 +146,16 @@ function NoticeDetail({ id }) {
     }
   };
 
-  const remove = async () => {
+  const confirmDelete = async () => {
+    setDeleting(true);
+    setError('');
     try {
       await api.deletePost(id);
       navigate('/notice');
     } catch (err) {
       setError(err.message);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -162,12 +169,22 @@ function NoticeDetail({ id }) {
         {isAdmin && !editing && (
           <div style={{ display: 'flex', gap: 6 }}>
             <button className="btn btn-sm" onClick={() => setEditing(true)}>수정</button>
-            <button className="btn btn-sm" onClick={remove}>삭제</button>
+            <button className="btn btn-sm" onClick={() => { setError(''); setConfirmingDelete(true); }}>삭제</button>
           </div>
         )}
       </div>
 
-      {error && <div className="validation-msg validation-err">⚠ {error}</div>}
+      <ConfirmDialog
+        open={confirmingDelete}
+        title="게시글 삭제"
+        message="이 게시글을 정말 삭제하시겠습니까? 되돌릴 수 없습니다."
+        loading={deleting}
+        error={error}
+        onConfirm={confirmDelete}
+        onCancel={() => { if (!deleting) { setConfirmingDelete(false); setError(''); } }}
+      />
+
+      {!confirmingDelete && error && <div className="validation-msg validation-err">⚠ {error}</div>}
 
       {editing ? (
         <div className="form-grid">
