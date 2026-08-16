@@ -9,8 +9,9 @@ export default defineConfig({
     proxy: {
       // 백엔드(Spring Boot)로 API 요청 프록시
       '/api': {
-        target: 'http://localhost:8080',
+        target: 'https://mghdanceclub.duckdns.org',
         changeOrigin: true,
+        secure: true,
       },
     },
   },
